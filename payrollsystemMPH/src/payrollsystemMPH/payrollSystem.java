@@ -172,7 +172,7 @@ public class payrollSystem {
                                     monthlyHours.put(date, hoursWorked);
                                     
                                     // Check for late hours
-                                    Date lateThreshold = timeFormat.parse("8:11");
+                                    Date lateThreshold = timeFormat.parse("8:10");
                                     if (timeIn.after(lateThreshold)) {
                                         double lateHour = calculateHoursWorked(lateThreshold, timeIn);
                                         lateHours.put(date, lateHour);
