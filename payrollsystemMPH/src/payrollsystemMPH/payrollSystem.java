@@ -18,6 +18,7 @@ public class payrollSystem {
 
     // Define a date format for handling time
     private static final SimpleDateFormat timeFormat = new SimpleDateFormat("H:mm");
+    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
 
     // Method to calculate hours worked based on time-in and time-out
     private static double calculateHoursWorked(Date timeIn, Date timeOut) {
@@ -30,14 +31,23 @@ public class payrollSystem {
         return hoursWorked;
     }
 
-    // Main method where the execution of the program starts
-    public static void main(String[] args) throws IOException {
+    // Method to get the week number based on a starting date and 7-day increment
+    private static String getWeekNumber(Date startDate, Date currentDate) {
+        long diffInMillies = currentDate.getTime() - startDate.getTime();
+        long diffInDays = diffInMillies / (1000 * 60 * 60 * 24);
+        int weekNumber = (int) (diffInDays / 7) + 1;
+        return String.format("%02d", weekNumber); // Format week number with leading zeros if it has only one digit
+    }
 
-    	// CSV file paths
+    // Main method where the execution of the program starts
+    @SuppressWarnings("deprecation")
+	public static void main(String[] args) throws IOException {
+
+        // CSV file paths
         String EmployeeDetails = "src\\Employee Details.csv";
         String AttendanceRecord = "src\\Attendance Record.csv";
         String HourlyRateFile = "src\\Hourly Rate.csv";
-        
+
         // Initialize employee ID outside the loop
         int employeeID = 0;
         try (Scanner scanner = new Scanner(System.in)) {
@@ -170,6 +180,14 @@ public class payrollSystem {
                     }
                 }
 
+                // Display payroll details
+                System.out.println("\n            PAYROLL DETAILS");
+
+                System.out.println("\nHourly Rate                : PHP " + hourlyRate + "\n");
+
+                // Display Late Hours for the selected month
+                System.out.println("\n       Hours Worked for " + enteredMonth);
+
                 // Read monthly hours worked from attendance records
                 Map<String, Double> monthlyHours = new TreeMap<>(); // Using TreeMap to sort by date
                 Map<String, Double> lateHours = new HashMap<>();
@@ -207,6 +225,26 @@ public class payrollSystem {
                                     // If both time-in and time-out are "0:00", set hours worked for that day to 0
                                     monthlyHours.put(date, 0.0);
                                 }
+
+                                // Get week number for the current date
+                                Date currentDate = dateFormat.parse(date);
+                                String[] monthYear = enteredMonth.split("/");
+                                int month = Integer.parseInt(monthYear[0]);
+                                int year = Integer.parseInt(monthYear[1]);
+                                if (currentDate.getMonth() + 1 == month && currentDate.getYear() + 1900 == year) {
+                                    String weekNumber = getWeekNumber(dateFormat.parse("01/03/2022"), currentDate);
+
+                                    // Get the hours worked for the current date
+                                    double hoursWorkedForDate = monthlyHours.get(date);
+
+                                    // Subtract 1 hour if the employee worked more than 8 hours
+                                    if (hoursWorkedForDate > 8.0) {
+                                        hoursWorkedForDate -= 1.0;
+                                    }
+
+                                    System.out.println("Week " + weekNumber + " - " + date + "       : " + String.format("%.2f", hoursWorkedForDate) + " hours");
+                                }
+
                             } catch (ParseException e) {
                                 System.out.println("Error parsing time for date: " + date);
                                 e.printStackTrace();
@@ -227,13 +265,57 @@ public class payrollSystem {
                     e.printStackTrace();
                 }
 
-                // Display payroll details
-                System.out.println("\n            PAYROLL DETAILS");
+             // Display total weekly hours worked
+      
 
-                System.out.println("\nHourly Rate                : PHP " + hourlyRate);
+                // Map to store weekly totals for the selected month
+                Map<String, Double> weeklyTotals = new HashMap<>();
 
-                // Display Hours Worked for the selected month
-                System.out.println("\n       Hours Worked for " + enteredMonth);
+                // Iterate through each date and calculate weekly totals
+                for (Map.Entry<String, Double> entry : monthlyHours.entrySet()) {
+                    String date = entry.getKey();
+                    Date currentDate;
+                    try {
+                        currentDate = dateFormat.parse(date);
+                    } catch (ParseException e) {
+                        System.out.println("Error parsing date: " + date);
+                        e.printStackTrace();
+                        continue;
+                    }
+
+                    // Check if the current date falls within the selected month
+                    String[] monthYear = enteredMonth.split("/");
+                    int month = Integer.parseInt(monthYear[0]);
+                    int year = Integer.parseInt(monthYear[1]);
+                    if (currentDate.getMonth() + 1 == month && currentDate.getYear() + 1900 == year) {
+                        String weekNumber;
+                        try {
+                            weekNumber = getWeekNumber(dateFormat.parse("01/03/2022"), currentDate);
+                        } catch (ParseException e) {
+                            System.out.println("Error parsing date: " + date);
+                            e.printStackTrace();
+                            continue;
+                        }
+
+                        double hoursWorked = entry.getValue();
+                        if (hoursWorked > 8.0) {
+                            hoursWorked -= 1.0;
+                        }
+                        double currentTotal = weeklyTotals.getOrDefault(weekNumber, 0.0);
+                        weeklyTotals.put(weekNumber, currentTotal + hoursWorked);
+                    }
+                }
+
+                System.out.println("----------------------------------------------- ");
+                
+                // Display weekly totals for the selected month
+                for (Map.Entry<String, Double> entry : weeklyTotals.entrySet()) {
+                    String weekNumber = entry.getKey();
+                    double totalHours = entry.getValue();
+                    System.out.println("Week " + weekNumber + " Total hours worked : " + String.format("%.2f", totalHours) + " hours");
+                }
+                
+             // Display total hours worked for the selected month
                 double totalHoursForMonth = 0.0;
                 for (Map.Entry<String, Double> entry : monthlyHours.entrySet()) {
                     String date = entry.getKey();
@@ -248,103 +330,87 @@ public class payrollSystem {
                             if (hoursWorked > 8.0) {
                                 hoursWorked -= 1.0;
                             }
-                            System.out.println(date + "                 : " + String.format("%.2f", hoursWorked) + " hours");
                             totalHoursForMonth += hoursWorked;
                         }
                     }
                 }
-                System.out.println("Total hours worked         : " + String.format("%.2f", totalHoursForMonth) + " hours");
-
-                // Display Late Hours for the selected month
+                System.out.println("\nTotal hours worked for the month : " + String.format("%.2f", totalHoursForMonth) + " hours");
+                
+                
+                
+                
+             // Display Late Hours for the selected month
                 System.out.println("\n       Late Hours for " + enteredMonth);
                 double totalLateHoursForMonth = 0.0;
                 for (Map.Entry<String, Double> entry : lateHours.entrySet()) {
                     String date = entry.getKey();
+                    double lateHour = entry.getValue();
                     // Extracting month and year from the date
                     String[] dateParts = date.split("/");
                     if (dateParts.length == 3) {
                         String monthYear = dateParts[0] + "/" + dateParts[2];
                         // Check if the date matches the entered month and year
                         if (monthYear.equals(enteredMonth)) {
-                            double lateHour = entry.getValue();
-                            System.out.println(date + "                 : " + String.format("%.2f", lateHour) + " hours late");
+                            // Get week number for the current date
+                            String weekNumber = "";
+                            try {
+                                Date currentDate = dateFormat.parse(date);
+                                weekNumber = getWeekNumber(dateFormat.parse("01/03/2022"), currentDate);
+                            } catch (ParseException e) {
+                                System.out.println("Error parsing date: " + date);
+                                e.printStackTrace();
+                            }
+                            System.out.println("Week " + weekNumber + " - " + date + "       : " + String.format("%.2f", lateHour) + " hours late");
                             totalLateHoursForMonth += lateHour;
                         }
                     }
                 }
-                System.out.println("Total late hours           : " + String.format("%.2f", totalLateHoursForMonth) + " hours");
+             // Display total weekly late hours
+                Map<String, Double> weeklyLateTotals = new HashMap<>();
 
-                // Calculate Gross Pay
-                double grossPay = totalHoursForMonth * hourlyRate;
-                System.out.println("\n            GROSS PAY");
-                System.out.println("\nGross Pay                  : PHP " + String.format("%.2f", grossPay));
+                // Iterate through each late hour and calculate weekly totals
+                for (Map.Entry<String, Double> entry : lateHours.entrySet()) {
+                    String date = entry.getKey();
+                    Date currentDate;
+                    try {
+                        currentDate = dateFormat.parse(date);
+                    } catch (ParseException e) {
+                        System.out.println("Error parsing date: " + date);
+                        e.printStackTrace();
+                        continue;
+                    }
 
-                // Calculate SSS Contribution
-                double sssContribution;
-                if (grossPay == 0) {
-                    sssContribution = 0.00;
-                } else if (grossPay < 3250) {
-                    sssContribution = 135.00;
-                } else if (grossPay <= 24750) {
-                    int bracket = (int) Math.ceil((grossPay - 3250) / 500);
-                    sssContribution = 135.00 + bracket * 22.50;
-                } else {
-                    sssContribution = 1125.00;
+                    // Check if the current date falls within the selected month
+                    String[] monthYear = enteredMonth.split("/");
+                    int month = Integer.parseInt(monthYear[0]);
+                    int year = Integer.parseInt(monthYear[1]);
+                    if (currentDate.getMonth() + 1 == month && currentDate.getYear() + 1900 == year) {
+                        String weekNumber;
+                        try {
+                            weekNumber = getWeekNumber(dateFormat.parse("01/03/2022"), currentDate);
+                        } catch (ParseException e) {
+                            System.out.println("Error parsing date: " + date);
+                            e.printStackTrace();
+                            continue;
+                        }
+
+                        double lateHour = entry.getValue();
+                        double currentTotal = weeklyLateTotals.getOrDefault(weekNumber, 0.0);
+                        weeklyLateTotals.put(weekNumber, currentTotal + lateHour);
+                    }
                 }
-
-                // Calculate PhilHealth Contribution
-                double philHealthContribution = (grossPay * 0.03) / 2;
-
-                // Calculate PagIBIG Contribution
-                double pagIBIGContribution;
-                if (grossPay >= 1500) {
-                    pagIBIGContribution = grossPay * 0.02;
-                } else if (grossPay >= 1000) {
-                    pagIBIGContribution = grossPay * 0.01;
-                } else {
-                    pagIBIGContribution = 0;
+                
+                System.out.println("----------------------------------------------- ");
+                
+                // Display weekly late totals for the selected month
+                for (Map.Entry<String, Double> entry : weeklyLateTotals.entrySet()) {
+                    String weekNumber = entry.getKey();
+                    double totalLateHours = entry.getValue();
+                    System.out.println("Week " + weekNumber + " Total late hours   : " + String.format("%.2f", totalLateHours) + " hours late");               
                 }
-
-                // Calculate Taxable Income
-                double taxableIncome = grossPay - sssContribution - pagIBIGContribution - philHealthContribution;
-
-                // Calculate Withholding Tax
-                double withholdingTax;
-                if (taxableIncome <= 20832) {
-                    withholdingTax = 0;
-                } else if (taxableIncome <= 33333) {
-                    withholdingTax = 0.2 * (taxableIncome - 20833);
-                } else if (taxableIncome <= 66667) {
-                    withholdingTax = 2500 + 0.25 * (taxableIncome - 33333);
-                } else if (taxableIncome <= 166667) {
-                    withholdingTax = 10833 + 0.3 * (taxableIncome - 66667);
-                } else if (taxableIncome <= 666667) {
-                    withholdingTax = 40833.33 + 0.32 * (taxableIncome - 166667);
-                } else {
-                    withholdingTax = 200833.33 + 0.35 * (taxableIncome - 666667);
-                }
-
-                // Calculate late deductions
-                double lateDeductions = totalLateHoursForMonth * hourlyRate;
-
-                // Display deduction details
-                System.out.println("\n            DEDUCTIONS");
-                System.out.println("\nSSS Contribution           : PHP " + String.format("%.2f", sssContribution));
-                System.out.println("PhilHealth Contribution    : PHP " + String.format("%.2f", philHealthContribution));
-                System.out.println("PagIBIG Contribution       : PHP " + String.format("%.2f", pagIBIGContribution));
-                System.out.println("Taxable Income             : PHP " + String.format("%.2f", taxableIncome));
-                System.out.println("Withholding Tax            : PHP " + String.format("%.2f", withholdingTax));
-                System.out.println("Late Deductions            : PHP " + String.format("%.2f", lateDeductions));
-
-                // Calculate net pay
-                double netPay = grossPay - sssContribution - pagIBIGContribution - philHealthContribution - withholdingTax - lateDeductions;
-
-                // Print net pay
-                System.out.println("\n            NET PAY");
-                System.out.println("\nNet Pay                    : PHP " + String.format("%.2f", netPay));
+                    System.out.println("\nTotal late hours for the month   : " + String.format("%.2f", totalLateHoursForMonth) + " hours late");
+                
             }
-        } catch (NumberFormatException e) {
-            e.printStackTrace();
         }
     }
 }
