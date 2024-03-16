@@ -13,42 +13,42 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.TreeMap;
 
-// Define the main class for the payroll system
+//Define the main class for the payroll system
 public class payrollSystem {
 
-    // Define a date format for handling time
-    private static final SimpleDateFormat timeFormat = new SimpleDateFormat("H:mm");
-    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
+ // Define a date format for handling time
+ private static final SimpleDateFormat timeFormat = new SimpleDateFormat("H:mm");
+ private static final SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
 
-    // Method to calculate hours worked based on time-in and time-out
-    private static double calculateHoursWorked(Date timeIn, Date timeOut) {
-        // Calculating the difference in milliseconds
-        long difference = timeOut.getTime() - timeIn.getTime();
+ // Method to calculate hours worked based on time-in and time-out
+ private static double calculateHoursWorked(Date timeIn, Date timeOut) {
+     // Calculating the difference in milliseconds
+     long difference = timeOut.getTime() - timeIn.getTime();
 
-        // Converting milliseconds to hours
-        double hoursWorked = difference / (1000.0 * 60 * 60);
+     // Converting milliseconds to hours
+     double hoursWorked = difference / (1000.0 * 60 * 60);
 
-        return hoursWorked;
-    }
+     return hoursWorked;
+ }
 
-    // Method to get the week number based on a starting date and 7-day increment
-    private static String getWeekNumber(Date startDate, Date currentDate) {
-        long diffInMillies = currentDate.getTime() - startDate.getTime();
-        long diffInDays = diffInMillies / (1000 * 60 * 60 * 24);
-        int weekNumber = (int) (diffInDays / 7) + 1;
-        return String.format("%02d", weekNumber); // Format week number with leading zeros if it has only one digit
-    }
+ // Method to get the week number based on a starting date and 7-day increment
+ private static String getWeekNumber(Date startDate, Date currentDate) {
+     long diffInMillies = currentDate.getTime() - startDate.getTime();
+     long diffInDays = diffInMillies / (1000 * 60 * 60 * 24);
+     int weekNumber = (int) (diffInDays / 7) + 1;
+     return String.format("%02d", weekNumber); // Format week number with leading zeros if it has only one digit
+ }
 
-    // Main method where the execution of the program starts
-    @SuppressWarnings("deprecation")
+ // Main method where the execution of the program starts
+ @SuppressWarnings("deprecation")
 	public static void main(String[] args) throws IOException {
 
-        // CSV file paths
-        String EmployeeDetails = "src\\Employee Details.csv";
+        // CSV file paths for employee details, attendance records, and hourly rates
+        String EmployeeDetails = "src\\EMployee Details.csv";
         String AttendanceRecord = "src\\Attendance Record.csv";
         String HourlyRateFile = "src\\Hourly Rate.csv";
 
-        // Initialize employee ID outside the loop
+     // Initialize employee ID outside the loop
         int employeeID = 0;
         try (Scanner scanner = new Scanner(System.in)) {
             while (true) {
@@ -409,6 +409,20 @@ public class payrollSystem {
                     System.out.println("Week " + weekNumber + " Total late hours   : " + String.format("%.2f", totalLateHours) + " hours late");               
                 }
                     System.out.println("\nTotal late hours for the month   : " + String.format("%.2f", totalLateHoursForMonth) + " hours late");
+                    
+                    // Calculate and display Gross Pay per week
+                    System.out.println("\n            GROSS PAY PER WEEK");
+                    for (Map.Entry<String, Double> entry : weeklyTotals.entrySet()) {
+                        String weekNumber = entry.getKey();
+                        double totalHours = entry.getValue();
+                        double grossPayForWeek = totalHours * hourlyRate;
+                        System.out.println("Week " + weekNumber + " Gross Pay: PHP " + String.format("%.2f", grossPayForWeek));
+                    }
+
+                    // Calculate and display Gross Pay for the month
+                    double grossPayForMonth = totalHoursForMonth * hourlyRate;
+                    System.out.println("\n            GROSS PAY FOR THE MONTH");
+                    System.out.println("Gross Pay for the month: PHP " + String.format("%.2f", grossPayForMonth));
                 
             }
         }
