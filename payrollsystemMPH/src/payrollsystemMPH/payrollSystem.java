@@ -1,3 +1,15 @@
+/* 
+
+== Notes about the code ==
+1) Not all employee details were displayed from the original data base sheet as to censor the other sensitive information of the employees. (Assuming the details will be shown on a system.)
+2) There is -1 hour in the total hours worked of employees since 1 hour is for break time and break time isn't paid.
+3) The deductions (that usually deducted quarterly/bi-monthly/monthly) were prorated by the number of days in a month (Philippine Calendar).
+4) Starting day for week number counting is every Monday.
+
+
+*/
+
+
 // Import necessary packages
 package payrollsystemMPH;
 
@@ -237,10 +249,15 @@ public class payrollSystem {
                                     // Get the hours worked for the current date
                                     double hoursWorkedForDate = monthlyHours.get(date);
 
-                                    // Subtract 1 hour if the employee worked more than 8 hours
-                                    if (hoursWorkedForDate > 8.0) {
-                                        hoursWorkedForDate -= 1.0;
-                                    }
+                                 // Subtract 1 hour if the employee worked more than 8 hours
+                                 // Subtract 1 hour if the employee worked less than 8 hours but greater than 0
+                                 if (hoursWorkedForDate > 0.0) {
+                                     if (hoursWorkedForDate > 8.0 || (hoursWorkedForDate < 8.0 && hoursWorkedForDate > 0.0)) {
+                                         hoursWorkedForDate -= 1.0;
+                                     }
+                                 } else {
+                                     hoursWorkedForDate = 0.0;
+                                 }
 
                                     System.out.println("Week " + weekNumber + " - " + date + "       : " + String.format("%.2f", hoursWorkedForDate) + " hours");
                                 }
@@ -298,8 +315,15 @@ public class payrollSystem {
                         }
 
                         double hoursWorked = entry.getValue();
-                        if (hoursWorked > 8.0) {
-                            hoursWorked -= 1.0;
+                        
+                        // Subtract 1 hour if the employee worked more than 8 hours
+                        // Subtract 1 hour if the employee worked less than 8 hours but greater than 0
+                        if (hoursWorked > 0.0) {
+                            if (hoursWorked > 8.0 || (hoursWorked < 8.0 && hoursWorked > 0.0)) {
+                                hoursWorked -= 1.0;
+                            }
+                        } else {
+                            hoursWorked = 0.0;
                         }
                         double currentTotal = weeklyTotals.getOrDefault(weekNumber, 0.0);
                         weeklyTotals.put(weekNumber, currentTotal + hoursWorked);
@@ -326,9 +350,15 @@ public class payrollSystem {
                         // Check if the date matches the entered month and year
                         if (monthYear.equals(enteredMonth)) {
                             double hoursWorked = entry.getValue();
+                            
                             // Subtract 1 hour if the employee worked more than 8 hours
-                            if (hoursWorked > 8.0) {
-                                hoursWorked -= 1.0;
+                            // Subtract 1 hour if the employee worked less than 8 hours but greater than 0
+                            if (hoursWorked > 0.0) {
+                                if (hoursWorked > 8.0 || (hoursWorked < 8.0 && hoursWorked > 0.0)) {
+                                    hoursWorked -= 1.0;
+                                }
+                            } else {
+                                hoursWorked = 0.0;
                             }
                             totalHoursForMonth += hoursWorked;
                         }
